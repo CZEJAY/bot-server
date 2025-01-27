@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String   @id @default(auto()) @map("_id") @db.ObjectId
+  email              String   @unique
+  name               String
+  password           String
+  hashedRefreshToken String?
+  role               Role     @default(USER)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  bots               Bot[]    @relation("UserToBots")
+}
+
+model Bot {
+  id                    String        @id @default(auto()) @map("_id") @db.ObjectId
+  name                  String
+  status                BotStatus     @default(DISCONNECTED)
+  qrCode                String?
+  config                Json
+  lastConnectionAttempt DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  userId                String        @db.ObjectId
+  user                  User          @relation("UserToBots", fields: [userId], references: [id])
+  groups                Group[]       @relation("BotToGroups")
+  authState             BotAuthState?
+}
+
+model BotAuthState {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  botId     String   @unique @db.ObjectId
+  bot       Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
+  creds     Bytes
+  keys      Bytes
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Group {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  groupId     String
+  name        String
+  isProtected Boolean  @default(true)
+  config      Json?
+  whitelist   String[]
+  botId       String   @db.ObjectId
+  bot         Bot      @relation("BotToGroups", fields: [botId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum BotStatus {
+  INITIALIZING
+  AWAITING_QR_SCAN
+  RECONNECTING
+  CONNECTED
+  DISCONNECTED
+  ERROR
+}
+
+enum Role {
+  ADMIN
+  EDITOR
+  USER
+}
