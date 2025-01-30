@@ -41,14 +41,6 @@ export class AuthController {
     });
   }
 
-  @Roles('ADMIN', 'EDITOR')
-  @Get('protected')
-  getAll(@Request() req) {
-    return {
-      messege: `Now you can access this protected API. this is your user ID: ${req.user.id}`,
-    };
-  }
-
   @Public()
   @UseGuards(RefreshAuthGuard)
   @Post('refresh')
